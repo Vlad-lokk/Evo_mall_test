@@ -9,7 +9,6 @@ import { Component, useState, onWillStart } from "@odoo/owl";
 
 const { DateTime } = luxon;
 
-
 export class LeaveStatsComponentCustom extends Component {
     setup() {
         this.orm = useService("orm");
