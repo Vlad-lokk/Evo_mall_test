@@ -3,22 +3,23 @@
 
     <t t-name="evo_mall_test.LeaveStatsComponentCustom" owl="1" class="o_leave_stats">
         <div t-if="department" >
-            <div style="font-weight: bold; font-size: 18px;">
-                <t t-esc="department[1]"/>
-            </div>
-            <div t-if="state.departmentLeaves.length === 0">
-                None
-            </div>
-                <div t-foreach="state.departmentLeaves" t-as="leave" t-key="leave_index" t-attf-class="{{leave.sameEmployee ? 'fw-bold': ''}}">
+
+                <div t-foreach="state.departmentLeaves" t-as="department" t-key="department_index">
                     <div>
-                        <div>
-                            <span t-esc="leave.holiday_status_id[1]"/>
-                            <span>: <t t-esc="leave.number_of_days"/> day(s)</span>
+                        <div style="font-weight: bold; font-size: 18px;">
+                            <t t-esc="department.departmentName"/>
                         </div>
-                        <div style="display: flex; justify-content: space-between; border-bottom: solid 1px grey; margin-bottom: 15px;">
-                            <span><t t-esc="leave.employee_id[1]"/></span>
-                            <span t-esc="leave.state"/>
-                            <span><t t-esc="leave.dateFrom"/> - <t t-esc="leave.dateTo"/></span>
+
+                        <div t-foreach="department.holidays" t-as="holidays" t-key="holidays_index">
+
+                            <span t-esc="holidays.holidayStatusName" style="font-weight: bold;"/>
+
+                            <div t-foreach="holidays.leaves" t-as="leaves" t-key="leaves_index" style="display: flex; justify-content: space-between;">
+                                <span><span t-esc="leaves.dateFrom"/> - <span t-esc="leaves.dateTo"/></span>
+                                <span t-esc="leaves.state"/>
+                                <span><span t-esc="leaves.number_of_days"/> day(s)</span>
+                            </div>
+
                         </div>
                     </div>
                 </div>

@@ -49,35 +49,81 @@ export class LeaveStatsComponentCustom extends Component {
         });
     }
 
-    async loadDepartmentLeaves(date, department, employee) {
-        if (!(department && employee && date)) {
+    async loadDepartmentLeaves(date, departments, employee) {
+        if (!(departments && employee && date)) {
             this.state.departmentLeaves = [];
             return;
         }
+
         const fieldsInfo = await this.orm.call("hr.leave", "fields_get", ["state"]);
         const stateSelection = fieldsInfo.state.selection;
+
         const departmentLeaves = await this.orm.searchRead(
             "hr.leave",
             [
-                ["department_id", "=", department[0]],
                 ["employee_id", "=", employee[0]],
                 ["holiday_type", "=", "employee"],
             ],
-            ["employee_id","department_id", "date_from", "date_to", "number_of_days", "state","holiday_status_id"]
+            ["employee_id", "department_id", "date_from", "date_to", "number_of_days", "state", "holiday_status_id"]
         );
-        console.log('department');
-        console.log(departmentLeaves);
 
-        this.state.departmentLeaves = departmentLeaves.map((leave) => {
-            const stateName = stateSelection.find((item) => item[0] === leave.state)?.[1] || leave.state;
-            return Object.assign({}, leave, {
-                dateFrom: formatDate(DateTime.fromSQL(leave.date_from, { zone: "utc" }).toLocal()),
-                dateTo: formatDate(DateTime.fromSQL(leave.date_to, { zone: "utc" }).toLocal()),
-                sameEmployee: leave.employee_id[0] === employee[0],
-                state: stateName,
+
+        const groupedByDepartment = departmentLeaves.reduce((acc, leave) => {
+            const departmentId = leave.department_id[0];
+            if (!acc[departmentId]) {
+                acc[departmentId] = {
+                    departmentId: leave.department_id,
+                    departmentName: leave.department_id[1], 
+                    leaves: [],
+                };
+            }
+            acc[departmentId].leaves.push(leave);
+            return acc;
+        }, {});
+
+        
+        this.state.departmentLeaves = Object.values(groupedByDepartment).map((group) => {
+           
+            const groupedByHolidayStatus = group.leaves.reduce((acc, leave) => {
+                const holidayStatusId = leave.holiday_status_id[0]; 
+
+                if (!acc[holidayStatusId]) {
+                    acc[holidayStatusId] = {
+                        holidayStatusId: leave.holiday_status_id,
+                        holidayStatusName: leave.holiday_status_id[1], 
+                        leaves: [],
+                    };
+                }
+                acc[holidayStatusId].leaves.push(leave);
+                return acc;
+            }, {});
+
+            const departmentsWithLeaves = Object.values(groupedByHolidayStatus).map((holidayGroup) => {
+                const leavesWithFormattedDates = holidayGroup.leaves.map((leave) => {
+                    const stateName = stateSelection.find((item) => item[0] === leave.state)?.[1] || leave.state;
+                    return Object.assign({}, leave, {
+                        dateFrom: formatDate(DateTime.fromSQL(leave.date_from, { zone: "utc" }).toLocal()),
+                        dateTo: formatDate(DateTime.fromSQL(leave.date_to, { zone: "utc" }).toLocal()),
+                        sameEmployee: leave.employee_id[0] === employee[0],
+                        state: stateName,
+                    });
+                });
+                return {
+                    holidayStatusId: holidayGroup.holidayStatusId,
+                    holidayStatusName: holidayGroup.holidayStatusName,
+                    leaves: leavesWithFormattedDates,
+                };
             });
+
+            return {
+                departmentId: group.departmentId,
+                departmentName: group.departmentName,
+                holidays: departmentsWithLeaves,
+            };
         });
     }
+
+
 
 }
 
